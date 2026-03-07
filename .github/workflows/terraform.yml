@@ -1,0 +1,193 @@
+name: Terraform
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'modules/**'
+      - 'environments/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'modules/**'
+      - 'environments/**'
+  workflow_dispatch:
+    inputs:
+      workspace:
+        description: 'Workspace to deploy'
+        required: true
+        type: choice
+        options:
+          - shared
+          - services
+      action:
+        description: 'Action to perform'
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+
+env:
+  AWS_REGION: us-east-1
+  TF_VERSION: "1.7.0"
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Detect which workspaces changed
+  # --------------------------------------------------------------------------
+  detect-changes:
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch'
+    outputs:
+      shared: ${{ steps.changes.outputs.shared }}
+      services: ${{ steps.changes.outputs.services }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect changed paths
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            shared:
+              - 'modules/**'
+              - 'environments/dev/shared/**'
+            services:
+              - 'modules/ecs-service/**'
+              - 'environments/dev/services/**'
+
+  # --------------------------------------------------------------------------
+  # Plan / Apply for shared workspace
+  # --------------------------------------------------------------------------
+  shared:
+    runs-on: ubuntu-latest
+    needs: [detect-changes]
+    if: |
+      always() &&
+      (
+        (github.event_name == 'workflow_dispatch' && inputs.workspace == 'shared') ||
+        (needs.detect-changes.result == 'success' && needs.detect-changes.outputs.shared == 'true')
+      )
+    defaults:
+      run:
+        working-directory: environments/dev/shared
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan
+        continue-on-error: true
+
+      - name: Comment PR with Plan
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `### Terraform Plan - Shared
+            \`\`\`
+            ${{ steps.plan.outputs.stdout }}
+            \`\`\`
+            *Triggered by @${{ github.actor }}*`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output.substring(0, 65536)
+            });
+
+      - name: Terraform Apply
+        if: |
+          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+        run: terraform apply -auto-approve tfplan
+
+  # --------------------------------------------------------------------------
+  # Plan / Apply for services workspace
+  # --------------------------------------------------------------------------
+  services:
+    runs-on: ubuntu-latest
+    needs: [detect-changes, shared]
+    if: |
+      always() &&
+      (needs.shared.result == 'success' || needs.shared.result == 'skipped') &&
+      (
+        (github.event_name == 'workflow_dispatch' && inputs.workspace == 'services') ||
+        (needs.detect-changes.result == 'success' && needs.detect-changes.outputs.services == 'true')
+      )
+    defaults:
+      run:
+        working-directory: environments/dev/services
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -no-color -out=tfplan
+        continue-on-error: true
+
+      - name: Comment PR with Plan
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `### Terraform Plan - Services
+            \`\`\`
+            ${{ steps.plan.outputs.stdout }}
+            \`\`\`
+            *Triggered by @${{ github.actor }}*`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output.substring(0, 65536)
+            });
+
+      - name: Terraform Apply
+        if: |
+          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+          (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+        run: terraform apply -auto-approve tfplan

@@ -1,0 +1,9 @@
+aws_region  = "us-east-1"
+project     = "forge"
+environment = "dev"
+domain_name = "yourdomain.com"
+
+# Image tags - set to git SHA or "latest"
+api_image_tag      = "latest"
+frontend_image_tag = "latest"
+worker_image_tag   = "latest"

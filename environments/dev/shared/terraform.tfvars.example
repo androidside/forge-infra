@@ -1,0 +1,5 @@
+aws_region      = "us-east-1"
+project         = "forge"
+environment     = "dev"
+domain_name     = "yourdomain.com"
+route53_zone_id = "Z0123456789ABCDEFGHIJ"
