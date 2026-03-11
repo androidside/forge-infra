@@ -120,6 +120,11 @@ output "app_domain" {
   value       = module.alb.app_domain
 }
 
+output "cert_validation_records" {
+  description = "CNAME records to add to Namecheap for SSL certificate validation"
+  value       = module.alb.cert_validation_records
+}
+
 output "api_domain" {
   description = "API domain"
   value       = module.alb.api_domain
@@ -169,4 +174,9 @@ output "openai_secret_arn" {
 output "huggingface_secret_arn" {
   description = "HuggingFace secret ARN"
   value       = aws_secretsmanager_secret.huggingface.arn
+}
+
+output "google_ai_secret_arn" {
+  description = "Google AI (Gemini) secret ARN"
+  value       = aws_secretsmanager_secret.google_ai.arn
 }

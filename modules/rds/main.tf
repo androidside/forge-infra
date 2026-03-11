@@ -27,7 +27,7 @@ resource "random_password" "db_password" {
 
 resource "aws_db_subnet_group" "main" {
   name       = "${var.project}-${var.environment}-db-subnet-group"
-  subnet_ids = var.private_subnet_ids
+  subnet_ids = var.publicly_accessible ? var.public_subnet_ids : var.private_subnet_ids
 
   tags = {
     Name        = "${var.project}-${var.environment}-db-subnet-group"
@@ -63,6 +63,18 @@ resource "aws_security_group_rule" "rds_ingress" {
   security_group_id        = aws_security_group.rds.id
 }
 
+resource "aws_security_group_rule" "rds_ingress_cidr" {
+  count = length(var.allowed_cidr_blocks) > 0 ? 1 : 0
+
+  type              = "ingress"
+  from_port         = 3306
+  to_port           = 3306
+  protocol          = "tcp"
+  cidr_blocks       = var.allowed_cidr_blocks
+  description       = "Direct access from whitelisted IPs"
+  security_group_id = aws_security_group.rds.id
+}
+
 resource "aws_security_group_rule" "rds_egress" {
   type              = "egress"
   from_port         = 0
@@ -95,7 +107,7 @@ resource "aws_db_instance" "main" {
   vpc_security_group_ids = [aws_security_group.rds.id]
 
   multi_az            = false
-  publicly_accessible = false
+  publicly_accessible = var.publicly_accessible
 
   backup_retention_period = 7
   skip_final_snapshot     = true

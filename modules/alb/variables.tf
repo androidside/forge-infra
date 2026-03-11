@@ -24,8 +24,3 @@ variable "domain_name" {
   description = "Base domain name (e.g., example.com)"
   type        = string
 }
-
-variable "route53_zone_id" {
-  description = "Route53 hosted zone ID for DNS records"
-  type        = string
-}

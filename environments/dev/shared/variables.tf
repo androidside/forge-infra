@@ -21,11 +21,6 @@ variable "domain_name" {
   type        = string
 }
 
-variable "route53_zone_id" {
-  description = "Route53 hosted zone ID for the domain"
-  type        = string
-}
-
 # Networking
 variable "vpc_cidr" {
   description = "VPC CIDR block"
@@ -50,6 +45,18 @@ variable "db_allocated_storage" {
   description = "RDS allocated storage in GB"
   type        = number
   default     = 20
+}
+
+variable "rds_publicly_accessible" {
+  description = "Whether RDS should be publicly accessible (for direct DB access)"
+  type        = bool
+  default     = false
+}
+
+variable "rds_allowed_cidr_blocks" {
+  description = "CIDR blocks allowed to connect to RDS directly (e.g. VPN IPs)"
+  type        = list(string)
+  default     = []
 }
 
 # ElastiCache

@@ -64,9 +64,12 @@ module "rds" {
   environment                = var.environment
   vpc_id                     = module.networking.vpc_id
   private_subnet_ids         = module.networking.private_subnet_ids
+  public_subnet_ids          = module.networking.public_subnet_ids
   allowed_security_group_ids = [] # Will be populated by ECS service SGs
   instance_class             = var.db_instance_class
   allocated_storage          = var.db_allocated_storage
+  publicly_accessible        = var.rds_publicly_accessible
+  allowed_cidr_blocks        = var.rds_allowed_cidr_blocks
 }
 
 # -----------------------------------------------------------------------------
@@ -104,7 +107,6 @@ module "alb" {
   vpc_id            = module.networking.vpc_id
   public_subnet_ids = module.networking.public_subnet_ids
   domain_name       = var.domain_name
-  route53_zone_id   = var.route53_zone_id
 }
 
 # -----------------------------------------------------------------------------
@@ -295,6 +297,26 @@ resource "aws_secretsmanager_secret_version" "huggingface" {
   secret_id = aws_secretsmanager_secret.huggingface.id
   secret_string = jsonencode({
     token = "CHANGE_ME"
+  })
+
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
+resource "aws_secretsmanager_secret" "google_ai" {
+  name = "forge/google-ai"
+
+  tags = {
+    Project     = var.project
+    Environment = var.environment
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "google_ai" {
+  secret_id = aws_secretsmanager_secret.google_ai.id
+  secret_string = jsonencode({
+    api_key = "CHANGE_ME"
   })
 
   lifecycle {

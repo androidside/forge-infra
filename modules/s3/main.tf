@@ -12,7 +12,7 @@ terraform {
 # -----------------------------------------------------------------------------
 
 locals {
-  actual_bucket_name = var.bucket_name != "" ? var.bucket_name : "${var.project}-${var.environment}-content"
+  actual_bucket_name = var.bucket_name != "" ? var.bucket_name : "${var.project}-${var.environment}-content-263618685979"
 }
 
 # -----------------------------------------------------------------------------

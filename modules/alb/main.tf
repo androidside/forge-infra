@@ -92,28 +92,19 @@ resource "aws_acm_certificate" "main" {
 
 # -----------------------------------------------------------------------------
 # Certificate DNS Validation
+# When using external DNS (e.g., Namecheap), add the CNAME records manually.
+# The validation records are exposed via the cert_validation_records output.
+# After adding the records, the certificate will validate automatically.
 # -----------------------------------------------------------------------------
 
-resource "aws_route53_record" "cert_validation" {
-  for_each = {
-    for dvo in aws_acm_certificate.main.domain_validation_options : dvo.domain_name => {
-      name   = dvo.resource_record_name
-      record = dvo.resource_record_value
-      type   = dvo.resource_record_type
-    }
-  }
-
-  allow_overwrite = true
-  name            = each.value.name
-  records         = [each.value.record]
-  ttl             = 60
-  type            = each.value.type
-  zone_id         = var.route53_zone_id
-}
-
 resource "aws_acm_certificate_validation" "main" {
-  certificate_arn         = aws_acm_certificate.main.arn
-  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
+  certificate_arn = aws_acm_certificate.main.arn
+
+  # No validation_record_fqdns — Terraform will wait/poll until the cert
+  # validates via the manually-added DNS records.
+  timeouts {
+    create = "30m"
+  }
 }
 
 # -----------------------------------------------------------------------------
@@ -165,33 +156,5 @@ resource "aws_lb_listener" "https" {
   tags = {
     Project     = var.project
     Environment = var.environment
-  }
-}
-
-# -----------------------------------------------------------------------------
-# Route53 Records (app + api subdomains)
-# -----------------------------------------------------------------------------
-
-resource "aws_route53_record" "app" {
-  zone_id = var.route53_zone_id
-  name    = "app.${var.domain_name}"
-  type    = "A"
-
-  alias {
-    name                   = aws_lb.main.dns_name
-    zone_id                = aws_lb.main.zone_id
-    evaluate_target_health = true
-  }
-}
-
-resource "aws_route53_record" "api" {
-  zone_id = var.route53_zone_id
-  name    = "api.${var.domain_name}"
-  type    = "A"
-
-  alias {
-    name                   = aws_lb.main.dns_name
-    zone_id                = aws_lb.main.zone_id
-    evaluate_target_health = true
   }
 }

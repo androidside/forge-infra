@@ -28,7 +28,7 @@ data "terraform_remote_state" "shared" {
   backend = "s3"
 
   config = {
-    bucket = "forge-terraform-state"
+    bucket = "forge-terraform-state-263618685979"
     key    = "dev/shared/terraform.tfstate"
     region = var.aws_region
   }
@@ -103,7 +103,7 @@ module "frontend" {
   vpc_id             = local.shared.vpc_id
   private_subnet_ids = local.shared.private_subnet_ids
   container_image    = local.frontend_image
-  container_port     = 80
+  container_port     = 8080
   cpu                = 256
   memory             = 512
   desired_count      = 1
@@ -144,7 +144,7 @@ module "api" {
   enable_load_balancer = true
   listener_arn         = local.shared.alb_https_listener_arn
   host_header          = "api.${var.domain_name}"
-  health_check_path    = "/docs"
+  health_check_path    = "/health"
 
   allowed_security_group_ids = [local.shared.alb_security_group_id]
 
@@ -218,11 +218,32 @@ module "celery" {
     { name = "REDIS_HOST", value = local.shared.redis_endpoint },
     { name = "REDIS_PORT", value = tostring(local.shared.redis_port) },
     { name = "REDIS_PUBSUB_PREFIX", value = "pipeline" },
+    { name = "DIARIZATION_METHOD", value = "gemini" },
+    { name = "GEMINI_MODEL", value = "gemini-3-flash-preview" },
+    { name = "WHISPER_MODEL", value = "base" },
+    { name = "WHISPER_DEVICE", value = "cpu" },
+    { name = "WHISPER_COMPUTE_TYPE", value = "int8" },
+    { name = "USE_GPU", value = "false" },
+    { name = "ENABLE_FACE_TRACKING", value = "true" },
+    { name = "FACE_DETECTION_DEVICE", value = "cpu" },
+    { name = "OUTPUT_RESOLUTION", value = "1080x1920" },
+    { name = "LOG_LEVEL", value = "INFO" },
+    { name = "ENABLE_DEBUG_LOGS", value = "false" },
+    { name = "MINIO_SECURE", value = "true" },
+    { name = "MINIO_ENDPOINT", value = "s3.${var.aws_region}.amazonaws.com" },
+    { name = "MINIO_ACCESS_KEY", value = "" },
+    { name = "MINIO_SECRET_KEY", value = "" },
+    { name = "DATABASE_HOST", value = local.shared.rds_endpoint },
+    { name = "DATABASE_PORT", value = tostring(local.shared.rds_port) },
+    { name = "DATABASE_NAME", value = "forge" },
   ]
 
   secrets = [
     { name = "OPENAI_API_KEY", valueFrom = "${local.shared.openai_secret_arn}:api_key::" },
-    { name = "HUGGINGFACE_TOKEN", valueFrom = "${local.shared.huggingface_secret_arn}:token::" },
+    { name = "HF_TOKEN", valueFrom = "${local.shared.huggingface_secret_arn}:token::" },
+    { name = "GOOGLE_AI_API_KEY", valueFrom = "${local.shared.google_ai_secret_arn}:api_key::" },
+    { name = "DATABASE_USER", valueFrom = "${local.shared.rds_secret_arn}:username::" },
+    { name = "DATABASE_PASSWORD", valueFrom = "${local.shared.rds_secret_arn}:password::" },
   ]
 }
 
@@ -263,6 +284,15 @@ resource "aws_security_group_rule" "worker_to_redis" {
   protocol                 = "tcp"
   source_security_group_id = module.worker.security_group_id
   security_group_id        = local.shared.redis_security_group_id
+}
+
+resource "aws_security_group_rule" "celery_to_rds" {
+  type                     = "ingress"
+  from_port                = 3306
+  to_port                  = 3306
+  protocol                 = "tcp"
+  source_security_group_id = module.celery.security_group_id
+  security_group_id        = local.shared.rds_security_group_id
 }
 
 resource "aws_security_group_rule" "celery_to_redis" {

@@ -48,3 +48,21 @@ variable "db_username" {
   type        = string
   default     = "forge_admin"
 }
+
+variable "publicly_accessible" {
+  description = "Whether the RDS instance should be publicly accessible"
+  type        = bool
+  default     = false
+}
+
+variable "public_subnet_ids" {
+  description = "List of public subnet IDs (required if publicly_accessible = true)"
+  type        = list(string)
+  default     = []
+}
+
+variable "allowed_cidr_blocks" {
+  description = "CIDR blocks allowed to connect directly (e.g. VPN IPs)"
+  type        = list(string)
+  default     = []
+}

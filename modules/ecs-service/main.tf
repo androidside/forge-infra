@@ -119,7 +119,7 @@ resource "aws_ecs_task_definition" "service" {
 resource "aws_lb_target_group" "service" {
   count = var.enable_load_balancer ? 1 : 0
 
-  name        = "${var.project}-${var.environment}-${var.service_name}-tg"
+  name_prefix = substr("${var.service_name}-", 0, 6)
   port        = var.container_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -131,6 +131,10 @@ resource "aws_lb_target_group" "service" {
     timeout             = 5
     healthy_threshold   = 2
     unhealthy_threshold = 3
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 
   tags = {
