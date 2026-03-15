@@ -77,6 +77,13 @@ resource "aws_ecs_task_definition" "service" {
   execution_role_arn       = var.execution_role_arn
   task_role_arn            = var.task_role_arn
 
+  dynamic "ephemeral_storage" {
+    for_each = var.ephemeral_storage_gib > 21 ? [var.ephemeral_storage_gib] : []
+    content {
+      size_in_gib = ephemeral_storage.value
+    }
+  }
+
   container_definitions = jsonencode([
     {
       name      = var.service_name

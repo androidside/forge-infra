@@ -202,10 +202,11 @@ module "celery" {
   private_subnet_ids = local.shared.private_subnet_ids
   container_image    = local.worker_image
   container_port     = 0
-  cpu                = 512
-  memory             = 1024
+  cpu                = 2048
+  memory             = 8192
   desired_count      = 1
   log_group_name     = local.shared.ecs_log_group_name
+  ephemeral_storage_gib = 40
 
   enable_load_balancer = false
 

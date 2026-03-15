@@ -133,3 +133,9 @@ variable "host_header" {
   type        = string
   default     = ""
 }
+
+variable "ephemeral_storage_gib" {
+  description = "Ephemeral storage size in GiB for the Fargate task (default 21, max 200)"
+  type        = number
+  default     = 21
+}
