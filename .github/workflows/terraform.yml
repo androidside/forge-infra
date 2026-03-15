@@ -28,6 +28,10 @@ on:
           - plan
           - apply
 
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: false
+
 env:
   AWS_REGION: us-east-1
   TF_VERSION: "1.7.0"
@@ -104,6 +108,22 @@ jobs:
         run: terraform plan -no-color -out=tfplan
         continue-on-error: true
 
+      - name: Force Unlock & Retry Plan
+        id: retry_plan
+        if: steps.plan.outcome == 'failure'
+        run: |
+          echo "Plan failed, checking for stale lock..."
+          LOCK_ID=$(terraform plan -no-color 2>&1 | grep -oP 'ID:\s+\K[a-f0-9-]+' || true)
+          if [ -n "$LOCK_ID" ]; then
+            echo "Found stale lock $LOCK_ID, force-unlocking..."
+            terraform force-unlock -force "$LOCK_ID"
+            echo "Retrying plan..."
+            terraform plan -no-color -out=tfplan
+          else
+            echo "No stale lock found, plan failed for another reason"
+            exit 1
+          fi
+
       - name: Comment PR with Plan
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
@@ -123,8 +143,11 @@ jobs:
 
       - name: Terraform Apply
         if: |
-          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-          (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+          (steps.plan.outcome == 'success' || steps.retry_plan.outcome == 'success') &&
+          (
+            (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+            (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+          )
         run: terraform apply -auto-approve tfplan
 
   # --------------------------------------------------------------------------
@@ -169,6 +192,22 @@ jobs:
         run: terraform plan -no-color -out=tfplan
         continue-on-error: true
 
+      - name: Force Unlock & Retry Plan
+        id: retry_plan
+        if: steps.plan.outcome == 'failure'
+        run: |
+          echo "Plan failed, checking for stale lock..."
+          LOCK_ID=$(terraform plan -no-color 2>&1 | grep -oP 'ID:\s+\K[a-f0-9-]+' || true)
+          if [ -n "$LOCK_ID" ]; then
+            echo "Found stale lock $LOCK_ID, force-unlocking..."
+            terraform force-unlock -force "$LOCK_ID"
+            echo "Retrying plan..."
+            terraform plan -no-color -out=tfplan
+          else
+            echo "No stale lock found, plan failed for another reason"
+            exit 1
+          fi
+
       - name: Comment PR with Plan
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
@@ -188,8 +227,11 @@ jobs:
 
       - name: Terraform Apply
         if: |
-          (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-          (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+          (steps.plan.outcome == 'success' || steps.retry_plan.outcome == 'success') &&
+          (
+            (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+            (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+          )
         run: terraform apply -auto-approve tfplan
 
   # --------------------------------------------------------------------------
