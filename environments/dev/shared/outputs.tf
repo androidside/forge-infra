@@ -180,3 +180,8 @@ output "google_ai_secret_arn" {
   description = "Google AI (Gemini) secret ARN"
   value       = aws_secretsmanager_secret.google_ai.arn
 }
+
+output "youtube_cookies_secret_arn" {
+  description = "YouTube cookies secret ARN"
+  value       = aws_secretsmanager_secret.youtube_cookies.arn
+}

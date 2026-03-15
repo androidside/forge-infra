@@ -323,3 +323,24 @@ resource "aws_secretsmanager_secret_version" "google_ai" {
     ignore_changes = [secret_string]
   }
 }
+
+# -----------------------------------------------------------------------------
+# YouTube Cookies (for yt-dlp bot detection bypass)
+# -----------------------------------------------------------------------------
+resource "aws_secretsmanager_secret" "youtube_cookies" {
+  name = "forge/youtube-cookies"
+
+  tags = {
+    Project     = var.project
+    Environment = var.environment
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "youtube_cookies" {
+  secret_id     = aws_secretsmanager_secret.youtube_cookies.id
+  secret_string = "CHANGE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}

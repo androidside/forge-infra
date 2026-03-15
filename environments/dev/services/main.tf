@@ -244,6 +244,7 @@ module "celery" {
     { name = "GOOGLE_AI_API_KEY", valueFrom = "${local.shared.google_ai_secret_arn}:api_key::" },
     { name = "DATABASE_USER", valueFrom = "${local.shared.rds_secret_arn}:username::" },
     { name = "DATABASE_PASSWORD", valueFrom = "${local.shared.rds_secret_arn}:password::" },
+    { name = "YOUTUBE_COOKIES", valueFrom = local.shared.youtube_cookies_secret_arn },
   ]
 }
 

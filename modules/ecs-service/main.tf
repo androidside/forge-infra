@@ -175,11 +175,12 @@ resource "aws_lb_listener_rule" "service" {
 # -----------------------------------------------------------------------------
 
 resource "aws_ecs_service" "service" {
-  name            = "${var.project}-${var.environment}-${var.service_name}"
-  cluster         = var.cluster_id
-  task_definition = aws_ecs_task_definition.service.arn
-  desired_count   = var.desired_count
-  launch_type     = "FARGATE"
+  name                   = "${var.project}-${var.environment}-${var.service_name}"
+  cluster                = var.cluster_id
+  task_definition        = aws_ecs_task_definition.service.arn
+  desired_count          = var.desired_count
+  launch_type            = "FARGATE"
+  enable_execute_command = true
 
   network_configuration {
     subnets          = var.private_subnet_ids
