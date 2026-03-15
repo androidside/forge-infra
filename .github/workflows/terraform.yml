@@ -6,11 +6,13 @@ on:
     paths:
       - 'modules/**'
       - 'environments/**'
+      - '.github/workflows/terraform.yml'
   pull_request:
     branches: [main]
     paths:
       - 'modules/**'
       - 'environments/**'
+      - '.github/workflows/terraform.yml'
   workflow_dispatch:
     inputs:
       workspace:
@@ -35,6 +37,9 @@ concurrency:
 env:
   AWS_REGION: us-east-1
   TF_VERSION: "1.7.0"
+  TF_VAR_domain_name: "viralclips.ai"
+  TF_VAR_rds_publicly_accessible: "true"
+  TF_VAR_rds_allowed_cidr_blocks: '["89.39.212.206/32", "107.142.32.250/32"]'
 
 permissions:
   id-token: write
@@ -105,7 +110,7 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color -out=tfplan
+        run: terraform plan -input=false -no-color -out=tfplan
         continue-on-error: true
 
       - name: Force Unlock & Retry Plan
@@ -113,12 +118,12 @@ jobs:
         if: steps.plan.outcome == 'failure'
         run: |
           echo "Plan failed, checking for stale lock..."
-          LOCK_ID=$(terraform plan -no-color 2>&1 | grep -oP 'ID:\s+\K[a-f0-9-]+' || true)
+          LOCK_ID=$(terraform plan -input=false -no-color 2>&1 | grep -oP 'ID:\s+\K[a-f0-9-]+' || true)
           if [ -n "$LOCK_ID" ]; then
             echo "Found stale lock $LOCK_ID, force-unlocking..."
             terraform force-unlock -force "$LOCK_ID"
             echo "Retrying plan..."
-            terraform plan -no-color -out=tfplan
+            terraform plan -input=false -no-color -out=tfplan
           else
             echo "No stale lock found, plan failed for another reason"
             exit 1
@@ -189,7 +194,7 @@ jobs:
 
       - name: Terraform Plan
         id: plan
-        run: terraform plan -no-color -out=tfplan
+        run: terraform plan -input=false -no-color -out=tfplan
         continue-on-error: true
 
       - name: Force Unlock & Retry Plan
@@ -197,12 +202,12 @@ jobs:
         if: steps.plan.outcome == 'failure'
         run: |
           echo "Plan failed, checking for stale lock..."
-          LOCK_ID=$(terraform plan -no-color 2>&1 | grep -oP 'ID:\s+\K[a-f0-9-]+' || true)
+          LOCK_ID=$(terraform plan -input=false -no-color 2>&1 | grep -oP 'ID:\s+\K[a-f0-9-]+' || true)
           if [ -n "$LOCK_ID" ]; then
             echo "Found stale lock $LOCK_ID, force-unlocking..."
             terraform force-unlock -force "$LOCK_ID"
             echo "Retrying plan..."
-            terraform plan -no-color -out=tfplan
+            terraform plan -input=false -no-color -out=tfplan
           else
             echo "No stale lock found, plan failed for another reason"
             exit 1
