@@ -250,7 +250,7 @@ jobs:
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
         with:
-          status: ${{ (needs.shared.result == 'failure' || needs.services.result == 'failure') && 'failure' || 'success' }}
+          status: ${{ (needs.shared.result == 'failure' || needs.services.result == 'failure') && 'failure' || (needs.shared.result == 'cancelled' || needs.services.result == 'cancelled') && 'cancelled' || 'success' }}
           fields: repo,message,commit,author,workflow
           channel: "#forge-deploys"
           text: |
@@ -263,9 +263,9 @@ jobs:
             *Branch:* `${{ github.ref_name }}`
             *Trigger:* ${{ github.event_name == 'workflow_dispatch' && 'Manual' || 'Push' }}
 
-            *Shared:* ${{ needs.shared.result == 'success' && ':white_check_mark: Applied' || needs.shared.result == 'skipped' && ':white_circle: No changes' || ':x: Failed' }}
-            *Services:* ${{ needs.services.result == 'success' && ':white_check_mark: Applied' || needs.services.result == 'skipped' && ':white_circle: No changes' || ':x: Failed' }}
+            *Shared:* ${{ needs.shared.result == 'success' && ':white_check_mark: Applied' || needs.shared.result == 'skipped' && ':white_circle: No changes' || needs.shared.result == 'cancelled' && ':warning: Cancelled' || ':x: Failed' }}
+            *Services:* ${{ needs.services.result == 'success' && ':white_check_mark: Applied' || needs.services.result == 'skipped' && ':white_circle: No changes' || needs.services.result == 'cancelled' && ':warning: Cancelled' || ':x: Failed' }}
 
-            ${{ (needs.shared.result == 'failure' || needs.services.result == 'failure') && ':x: Terraform apply failed. Please check the logs.' || ':white_check_mark: Terraform completed successfully!' }}
+            ${{ (needs.shared.result == 'failure' || needs.services.result == 'failure') && ':x: Terraform apply failed. Please check the logs.' || (needs.shared.result == 'cancelled' || needs.services.result == 'cancelled') && ':warning: Run was cancelled.' || ':white_check_mark: Terraform completed successfully!' }}
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_FORGE_DEPLOYS_WEBHOOK_URL }}
