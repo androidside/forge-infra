@@ -247,25 +247,63 @@ jobs:
     needs: [detect-changes, shared, services]
     if: always() && github.event_name != 'pull_request'
     steps:
-      - name: Slack Notification
+      - name: Slack - Terraform Success
+        if: needs.shared.result != 'failure' && needs.services.result != 'failure' && needs.shared.result != 'cancelled' && needs.services.result != 'cancelled'
         uses: 8398a7/action-slack@v3
         with:
-          status: ${{ (needs.shared.result == 'failure' || needs.services.result == 'failure') && 'failure' || (needs.shared.result == 'cancelled' || needs.services.result == 'cancelled') && 'cancelled' || 'success' }}
+          status: success
           fields: repo,message,commit,author,workflow
           channel: "#forge-deploys"
           text: |
-            *Terraform Summary*
+            :white_check_mark: *Terraform Succeeded*
 
-            *Environment:* Development
-            *Commit:* `${{ github.sha }}`
-            *Message:* ${{ github.event.head_commit.message }}
+            *Commit:* `${{ github.sha }}` - ${{ github.event.head_commit.message }}
             *Author:* ${{ github.event.head_commit.author.name }}
-            *Branch:* `${{ github.ref_name }}`
+            *Trigger:* ${{ github.event_name == 'workflow_dispatch' && 'Manual' || 'Push' }}
+
+            *Shared:* ${{ needs.shared.result == 'success' && ':white_check_mark: Applied' || ':white_circle: No changes' }}
+            *Services:* ${{ needs.services.result == 'success' && ':white_check_mark: Applied' || ':white_circle: No changes' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_FORGE_DEPLOYS_WEBHOOK_URL }}
+
+      - name: Slack - Terraform Cancelled
+        if: (needs.shared.result == 'cancelled' || needs.services.result == 'cancelled') && needs.shared.result != 'failure' && needs.services.result != 'failure'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: cancelled
+          fields: repo,message,commit,author,workflow
+          channel: "#forge-deploys"
+          text: |
+            :warning: *Terraform Cancelled*
+
+            Run was cancelled before completing.
+
+            *Commit:* `${{ github.sha }}` - ${{ github.event.head_commit.message }}
+            *Author:* ${{ github.event.head_commit.author.name }}
+            *Trigger:* ${{ github.event_name == 'workflow_dispatch' && 'Manual' || 'Push' }}
+
+            *Shared:* ${{ needs.shared.result == 'success' && ':white_check_mark: Applied' || needs.shared.result == 'skipped' && ':white_circle: No changes' || needs.shared.result == 'cancelled' && ':warning: Cancelled' || ':x: Failed' }}
+            *Services:* ${{ needs.services.result == 'success' && ':white_check_mark: Applied' || needs.services.result == 'skipped' && ':white_circle: No changes' || needs.services.result == 'cancelled' && ':warning: Cancelled' || ':x: Failed' }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_FORGE_DEPLOYS_WEBHOOK_URL }}
+
+      - name: Slack - Terraform Failed
+        if: needs.shared.result == 'failure' || needs.services.result == 'failure'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          fields: repo,message,commit,author,workflow
+          channel: "#forge-deploys"
+          text: |
+            :rotating_light: *Terraform FAILED*
+
+            *Commit:* `${{ github.sha }}` - ${{ github.event.head_commit.message }}
+            *Author:* ${{ github.event.head_commit.author.name }}
             *Trigger:* ${{ github.event_name == 'workflow_dispatch' && 'Manual' || 'Push' }}
 
             *Shared:* ${{ needs.shared.result == 'success' && ':white_check_mark: Applied' || needs.shared.result == 'skipped' && ':white_circle: No changes' || needs.shared.result == 'cancelled' && ':warning: Cancelled' || ':x: Failed' }}
             *Services:* ${{ needs.services.result == 'success' && ':white_check_mark: Applied' || needs.services.result == 'skipped' && ':white_circle: No changes' || needs.services.result == 'cancelled' && ':warning: Cancelled' || ':x: Failed' }}
 
-            ${{ (needs.shared.result == 'failure' || needs.services.result == 'failure') && ':x: Terraform apply failed. Please check the logs.' || (needs.shared.result == 'cancelled' || needs.services.result == 'cancelled') && ':warning: Run was cancelled.' || ':white_check_mark: Terraform completed successfully!' }}
+            <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View logs>
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_FORGE_DEPLOYS_WEBHOOK_URL }}
