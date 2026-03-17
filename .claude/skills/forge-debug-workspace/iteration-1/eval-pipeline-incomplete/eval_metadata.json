@@ -1,0 +1,12 @@
+{
+  "eval_id": 0,
+  "eval_name": "pipeline-incomplete",
+  "prompt": "hey this pipeline run 019cf473-e5f0-7666-834e-ab8a3b5a95ef didn't complete, can you check what happened?",
+  "assertions": [
+    {"id": "checked_db_status", "text": "Queried the pipeline_run table for the specific UUID"},
+    {"id": "checked_logs", "text": "Searched CloudWatch logs for the pipeline run ID or related errors"},
+    {"id": "checked_s3_artifacts", "text": "Listed S3 artifacts to see which pipeline steps completed"},
+    {"id": "identified_failure_point", "text": "Identified the specific step or reason the pipeline failed"},
+    {"id": "actionable_summary", "text": "Provided a clear summary with actionable next steps or recommendations"}
+  ]
+}

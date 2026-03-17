@@ -1,0 +1,12 @@
+{
+  "eval_id": 2,
+  "eval_name": "celery-health",
+  "prompt": "the celery worker seems slow or stuck, can you check if it's running ok?",
+  "assertions": [
+    {"id": "checked_ecs_tasks", "text": "Listed or described ECS tasks for the celery service to check running status"},
+    {"id": "checked_service_events", "text": "Looked at recent ECS service events for crashes, restarts, or deployment issues"},
+    {"id": "checked_celery_logs", "text": "Tailed or searched recent celery CloudWatch logs"},
+    {"id": "checked_stuck_runs", "text": "Queried database for PROCESSING runs that may be stuck"},
+    {"id": "health_assessment", "text": "Gave a clear health assessment with specific findings"}
+  ]
+}

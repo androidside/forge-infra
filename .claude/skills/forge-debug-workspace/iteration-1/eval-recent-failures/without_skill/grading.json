@@ -1,0 +1,10 @@
+{
+  "eval_id": 1,
+  "run_type": "without_skill",
+  "expectations": [
+    {"text": "Ran a database query filtering pipeline runs by FAILED status or recent timeframe", "passed": false, "evidence": "Investigated GitHub Actions CI/CD failures instead of video pipeline_run database records. Interpreted 'pipeline' as CI pipeline, not the video processing pipeline."},
+    {"text": "Displayed relevant details like IDs, steps, errors, and timestamps", "passed": false, "evidence": "Showed CI run details (workflow IDs, Terraform plan hangs) rather than pipeline_run table data"},
+    {"text": "Checked CloudWatch logs for ERROR patterns or failure details", "passed": false, "evidence": "Did not check CloudWatch application logs. Only looked at GitHub Actions workflow logs."},
+    {"text": "Provided a clear summary categorizing failures with recommendations", "passed": false, "evidence": "Recommendations address CI/CD issues (job timeouts, lock-timeout) but miss the actual video pipeline failures entirely"}
+  ]
+}

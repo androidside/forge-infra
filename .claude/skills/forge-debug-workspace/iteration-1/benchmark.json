@@ -1,0 +1,92 @@
+{
+  "skill_name": "forge-debug",
+  "iteration": 1,
+  "timestamp": "2026-03-16T16:00:00Z",
+  "configurations": [
+    {
+      "name": "with_skill",
+      "results": [
+        {
+          "eval_id": 0,
+          "eval_name": "pipeline-incomplete",
+          "pass_rate": 1.0,
+          "passed": 5,
+          "total": 5,
+          "duration_seconds": 434.5,
+          "total_tokens": 51334
+        },
+        {
+          "eval_id": 1,
+          "eval_name": "recent-failures",
+          "pass_rate": 1.0,
+          "passed": 4,
+          "total": 4,
+          "duration_seconds": 252.5,
+          "total_tokens": 30846
+        },
+        {
+          "eval_id": 2,
+          "eval_name": "celery-health",
+          "pass_rate": 1.0,
+          "passed": 5,
+          "total": 5,
+          "duration_seconds": 134.7,
+          "total_tokens": 28110
+        }
+      ],
+      "aggregate": {
+        "mean_pass_rate": 1.0,
+        "stddev_pass_rate": 0.0,
+        "mean_duration_seconds": 273.9,
+        "stddev_duration_seconds": 124.2,
+        "mean_tokens": 36763,
+        "stddev_tokens": 10216
+      }
+    },
+    {
+      "name": "without_skill",
+      "results": [
+        {
+          "eval_id": 0,
+          "eval_name": "pipeline-incomplete",
+          "pass_rate": 0.6,
+          "passed": 3,
+          "total": 5,
+          "duration_seconds": 538.7,
+          "total_tokens": 55253
+        },
+        {
+          "eval_id": 1,
+          "eval_name": "recent-failures",
+          "pass_rate": 0.0,
+          "passed": 0,
+          "total": 4,
+          "duration_seconds": 232.5,
+          "total_tokens": 25286
+        },
+        {
+          "eval_id": 2,
+          "eval_name": "celery-health",
+          "pass_rate": 1.0,
+          "passed": 5,
+          "total": 5,
+          "duration_seconds": 326.7,
+          "total_tokens": 47268
+        }
+      ],
+      "aggregate": {
+        "mean_pass_rate": 0.53,
+        "stddev_pass_rate": 0.41,
+        "mean_duration_seconds": 365.9,
+        "stddev_duration_seconds": 127.0,
+        "mean_tokens": 42602,
+        "stddev_tokens": 12486
+      }
+    }
+  ],
+  "delta": {
+    "pass_rate": "+0.47 (1.00 vs 0.53)",
+    "duration": "-25% faster (274s vs 366s avg)",
+    "tokens": "-14% fewer tokens (36.8K vs 42.6K avg)"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "eval_id": 1,
+  "eval_name": "recent-failures",
+  "prompt": "are there any failed pipeline runs in the last few days? something seems off",
+  "assertions": [
+    {"id": "queried_failed_runs", "text": "Ran a database query filtering pipeline runs by FAILED status or recent timeframe"},
+    {"id": "showed_run_details", "text": "Displayed relevant details like IDs, steps, errors, and timestamps"},
+    {"id": "checked_error_logs", "text": "Checked CloudWatch logs for ERROR patterns or failure details"},
+    {"id": "actionable_summary", "text": "Provided a clear summary categorizing failures with recommendations"}
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "eval_id": 2,
+  "run_type": "with_skill",
+  "expectations": [
+    {"text": "Listed or described ECS tasks for the celery service to check running status", "passed": true, "evidence": "Listed and described ECS task, confirmed 1/1 running, no crashes"},
+    {"text": "Looked at recent ECS service events for crashes, restarts, or deployment issues", "passed": true, "evidence": "Checked service events, noted steady state since morning, one redeployment on Mar 15"},
+    {"text": "Tailed or searched recent celery CloudWatch logs", "passed": true, "evidence": "Searched celery logs, found FFmpeg stall errors and S3 NoSuchKey warnings"},
+    {"text": "Queried database for PROCESSING runs that may be stuck", "passed": true, "evidence": "Queried all recent pipeline runs, found all 10 failed, none stuck in PROCESSING"},
+    {"text": "Gave a clear health assessment with specific findings", "passed": true, "evidence": "Clear verdict: worker healthy, real issue is FFmpeg stall on clip 3 vertical encoding. 3/4 clips completed."}
+  ]
+}

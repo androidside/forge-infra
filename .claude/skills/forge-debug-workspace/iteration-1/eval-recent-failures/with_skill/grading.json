@@ -1,0 +1,10 @@
+{
+  "eval_id": 1,
+  "run_type": "with_skill",
+  "expectations": [
+    {"text": "Ran a database query filtering pipeline runs by FAILED status or recent timeframe", "passed": true, "evidence": "Queried pipeline_run table, found all 10 runs in last 2 days failed with zero completions"},
+    {"text": "Displayed relevant details like IDs, steps, errors, and timestamps", "passed": true, "evidence": "Detailed breakdown of each run with IDs, failure steps, error messages, and timestamps"},
+    {"text": "Checked CloudWatch logs for ERROR patterns or failure details", "passed": true, "evidence": "Checked CloudWatch, noted zero ERROR entries (flagged as suspicious), found yt-dlp and FFmpeg errors in regular logs"},
+    {"text": "Provided a clear summary categorizing failures with recommendations", "passed": true, "evidence": "Categorized into 3 distinct patterns (YouTube bot-detection, format error, export stale timeout) with specific fixes for each"}
+  ]
+}

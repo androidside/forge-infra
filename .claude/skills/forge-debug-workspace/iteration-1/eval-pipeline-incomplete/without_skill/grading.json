@@ -1,0 +1,11 @@
+{
+  "eval_id": 0,
+  "run_type": "without_skill",
+  "expectations": [
+    {"text": "Queried the pipeline_run table for the specific UUID", "passed": true, "evidence": "Queried DB, confirmed record does not exist"},
+    {"text": "Searched CloudWatch logs for the pipeline run ID or related errors", "passed": true, "evidence": "Extensive log analysis finding task submission at 02:22:42 UTC, warm shutdown at 02:28:41 UTC, and API delete at 02:30:13 UTC"},
+    {"text": "Listed S3 artifacts to see which pipeline steps completed", "passed": false, "evidence": "Did not list S3 artifacts. Concluded '0 artifacts' based on API delete log, but S3 actually contains artifacts in steps 1-4"},
+    {"text": "Identified the specific step or reason the pipeline failed", "passed": true, "evidence": "Identified ECS rolling deployment killing the worker during download. Plausible but may be looking at a different attempt; the WITH skill run found artifacts from steps 1-4 in S3"},
+    {"text": "Provided a clear summary with actionable next steps or recommendations", "passed": true, "evidence": "Good recommendations: increase ECS stop timeout, implement acks_late, add deployment guards"}
+  ]
+}

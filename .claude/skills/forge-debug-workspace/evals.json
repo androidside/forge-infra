@@ -1,0 +1,23 @@
+{
+  "skill_name": "forge-debug",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "hey this pipeline run 019cf473-e5f0-7666-834e-ab8a3b5a95ef didn't complete, can you check what happened?",
+      "expected_output": "Should check pipeline_run status in DB, look at CloudWatch celery logs for that run ID, and inspect S3 artifacts to see where it stopped",
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "are there any failed pipeline runs in the last few days? something seems off",
+      "expected_output": "Should query the database for recent FAILED pipeline runs, show their details, and check celery logs for errors",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "the celery worker seems slow or stuck, can you check if it's running ok?",
+      "expected_output": "Should check ECS task health, recent celery logs, and possibly check for stuck PROCESSING pipeline runs in the DB",
+      "files": []
+    }
+  ]
+}

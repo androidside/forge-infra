@@ -1,0 +1,11 @@
+{
+  "eval_id": 0,
+  "run_type": "with_skill",
+  "expectations": [
+    {"text": "Queried the pipeline_run table for the specific UUID", "passed": true, "evidence": "Queried DB, found no pipeline_run record exists for the UUID"},
+    {"text": "Searched CloudWatch logs for the pipeline run ID or related errors", "passed": true, "evidence": "Found complete timeline from 04:23:24 UTC - download through step 4 failure with IntegrityError"},
+    {"text": "Listed S3 artifacts to see which pipeline steps completed", "passed": true, "evidence": "Listed S3 and found artifacts in 1-sources through 4-segments, noted missing 5-cropped+ folders"},
+    {"text": "Identified the specific step or reason the pipeline failed", "passed": true, "evidence": "Correctly identified FK constraint violation at step 4 (cut) because pipeline_run record doesn't exist in DB"},
+    {"text": "Provided a clear summary with actionable next steps or recommendations", "passed": true, "evidence": "Three recommendations: re-run via API, add fail-fast guard at step 1, investigate dispatch race condition"}
+  ]
+}
