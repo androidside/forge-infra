@@ -202,8 +202,8 @@ module "celery" {
   private_subnet_ids = local.shared.private_subnet_ids
   container_image    = local.worker_image
   container_port     = 0
-  cpu                = 4096
-  memory             = 16384
+  cpu                = 8192
+  memory             = 32768
   desired_count      = 1
   log_group_name     = local.shared.ecs_log_group_name
   ephemeral_storage_gib = 40
@@ -230,7 +230,7 @@ module "celery" {
     { name = "OUTPUT_RESOLUTION", value = "1080x1920" },
     { name = "LOG_LEVEL", value = "INFO" },
     { name = "ENABLE_DEBUG_LOGS", value = "false" },
-    { name = "FFMPEG_THREADS", value = "2" },
+    { name = "FFMPEG_THREADS", value = "3" },
     { name = "FFMPEG_STALL_TIMEOUT", value = "300" },
     { name = "MINIO_SECURE", value = "true" },
     { name = "MINIO_ENDPOINT", value = "s3.${var.aws_region}.amazonaws.com" },
