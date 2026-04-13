@@ -60,7 +60,6 @@ locals {
     { name = "MINIO_SECRET_KEY", value = "" },
     { name = "API_BASE_URL", value = "https://api.${var.domain_name}" },
     { name = "FRONTEND_URL", value = "https://app.${var.domain_name}" },
-    { name = "RUN_MIGRATIONS", value = "false" },
   ]
 
   # Secrets for NestJS services (from Secrets Manager)
