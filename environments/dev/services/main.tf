@@ -85,6 +85,7 @@ locals {
     { name = "TIKTOK_CLIENT_SECRET", valueFrom = "${local.shared.tiktok_secret_arn}:client_secret::" },
     { name = "LINKEDIN_CLIENT_ID", valueFrom = "${local.shared.linkedin_secret_arn}:client_id::" },
     { name = "LINKEDIN_CLIENT_SECRET", valueFrom = "${local.shared.linkedin_secret_arn}:client_secret::" },
+    { name = "YOUTUBE_API_KEY", valueFrom = "${local.shared.youtube_api_key_secret_arn}:apiKey::" },
   ]
 }
 

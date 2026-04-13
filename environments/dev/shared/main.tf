@@ -325,6 +325,30 @@ resource "aws_secretsmanager_secret_version" "google_ai" {
 }
 
 # -----------------------------------------------------------------------------
+# YouTube API Key (for YouTube Data API v3)
+# -----------------------------------------------------------------------------
+resource "aws_secretsmanager_secret" "youtube_api_key" {
+  name = "forge/youtube-api-key"
+
+  tags = {
+    Project     = var.project
+    Environment = var.environment
+  }
+
+  lifecycle {
+    prevent_destroy = false
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "youtube_api_key" {
+  secret_id     = aws_secretsmanager_secret.youtube_api_key.id
+  secret_string = jsonencode({ apiKey = "CHANGE_ME" })
+
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
 # YouTube Cookies (for yt-dlp bot detection bypass)
 # -----------------------------------------------------------------------------
 resource "aws_secretsmanager_secret" "youtube_cookies" {
