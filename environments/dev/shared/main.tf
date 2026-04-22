@@ -324,6 +324,26 @@ resource "aws_secretsmanager_secret_version" "google_ai" {
   }
 }
 
+resource "aws_secretsmanager_secret" "anthropic" {
+  name = "forge/anthropic"
+
+  tags = {
+    Project     = var.project
+    Environment = var.environment
+  }
+}
+
+resource "aws_secretsmanager_secret_version" "anthropic" {
+  secret_id = aws_secretsmanager_secret.anthropic.id
+  secret_string = jsonencode({
+    api_key = "CHANGE_ME"
+  })
+
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
+}
+
 # -----------------------------------------------------------------------------
 # YouTube API Key (for YouTube Data API v3)
 # -----------------------------------------------------------------------------

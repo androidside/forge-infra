@@ -181,6 +181,11 @@ output "google_ai_secret_arn" {
   value       = aws_secretsmanager_secret.google_ai.arn
 }
 
+output "anthropic_secret_arn" {
+  description = "Anthropic (Claude) secret ARN"
+  value       = aws_secretsmanager_secret.anthropic.arn
+}
+
 output "youtube_api_key_secret_arn" {
   description = "YouTube API key secret ARN"
   value       = aws_secretsmanager_secret.youtube_api_key.arn
