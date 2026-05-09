@@ -1,0 +1,198 @@
+name: Slack Notification
+
+on:
+  push:
+  create:
+  delete:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack notification
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_JSON: ${{ toJson(github.event) }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          REPO_URL="https://github.com/${REPO}"
+          REPO_NAME="${REPO##*/}"
+          ACTOR_URL="https://github.com/${ACTOR}"
+          REPO_ICON="https://github.githubassets.com/favicons/favicon.png"
+
+          send() {
+            curl --fail-with-body -sS -X POST "$SLACK_WEBHOOK_URL" \
+              -H 'Content-type: application/json' \
+              -d "$1"
+          }
+
+          context_json() {
+            jq -n \
+              --arg repo "$REPO" \
+              --arg repo_url "$REPO_URL" \
+              --arg repo_icon "$REPO_ICON" \
+              '{
+                type: "context",
+                elements: [
+                  { type: "image", image_url: $repo_icon, alt_text: "GitHub" },
+                  { type: "mrkdwn", text: "<\($repo_url)|\($repo)>" }
+                ]
+              }'
+          }
+
+          # ===== create event (branches only) =====
+          if [ "$EVENT_NAME" = "create" ]; then
+            REF_TYPE=$(jq -r '.ref_type // empty' <<<"$EVENT_JSON")
+            if [ "$REF_TYPE" != "branch" ]; then
+              echo "create event for $REF_TYPE; skipping."
+              exit 0
+            fi
+            BRANCH=$(jq -r '.ref' <<<"$EVENT_JSON")
+            BRANCH_URL="${REPO_URL}/tree/${BRANCH}"
+            CTX=$(context_json)
+            FALLBACK="${REPO_NAME}: Branch created by ${ACTOR}: ${BRANCH}"
+            PAYLOAD=$(jq -n \
+              --arg fallback "$FALLBACK" \
+              --arg branch "$BRANCH" \
+              --arg branch_url "$BRANCH_URL" \
+              --arg actor "$ACTOR" \
+              --arg actor_url "$ACTOR_URL" \
+              --argjson ctx "$CTX" \
+              '{
+                text: $fallback,
+                blocks: [
+                  {
+                    type: "section",
+                    text: { type: "mrkdwn", text: "Branch created by <\($actor_url)|\($actor)>" }
+                  }
+                ],
+                attachments: [{
+                  color: "#36a64f",
+                  blocks: [
+                    {
+                      type: "section",
+                      text: { type: "mrkdwn", text: "*<\($branch_url)|\($branch)>*" }
+                    },
+                    $ctx
+                  ]
+                }]
+              }')
+            send "$PAYLOAD"
+            exit 0
+          fi
+
+          # ===== delete event (branches only) =====
+          if [ "$EVENT_NAME" = "delete" ]; then
+            REF_TYPE=$(jq -r '.ref_type // empty' <<<"$EVENT_JSON")
+            if [ "$REF_TYPE" != "branch" ]; then
+              echo "delete event for $REF_TYPE; skipping."
+              exit 0
+            fi
+            BRANCH=$(jq -r '.ref' <<<"$EVENT_JSON")
+            CTX=$(context_json)
+            FALLBACK="${REPO_NAME}: Branch deleted by ${ACTOR}: ${BRANCH}"
+            PAYLOAD=$(jq -n \
+              --arg fallback "$FALLBACK" \
+              --arg branch "$BRANCH" \
+              --arg actor "$ACTOR" \
+              --arg actor_url "$ACTOR_URL" \
+              --argjson ctx "$CTX" \
+              '{
+                text: $fallback,
+                blocks: [
+                  {
+                    type: "section",
+                    text: { type: "mrkdwn", text: "Branch deleted by <\($actor_url)|\($actor)>" }
+                  }
+                ],
+                attachments: [{
+                  color: "#d73a4a",
+                  blocks: [
+                    {
+                      type: "section",
+                      text: { type: "mrkdwn", text: "*\($branch)* was deleted" }
+                    },
+                    $ctx
+                  ]
+                }]
+              }')
+            send "$PAYLOAD"
+            exit 0
+          fi
+
+          # ===== push event =====
+          if [ "$EVENT_NAME" != "push" ]; then
+            echo "Unhandled event: $EVENT_NAME"
+            exit 0
+          fi
+
+          REF=$(jq -r '.ref' <<<"$EVENT_JSON")
+          case "$REF" in
+            refs/heads/*) ;;
+            *) echo "non-branch ref $REF; skipping."; exit 0 ;;
+          esac
+
+          BRANCH=$(jq -r '.ref | sub("^refs/heads/"; "")' <<<"$EVENT_JSON")
+          BRANCH_URL="${REPO_URL}/tree/${BRANCH}"
+          COMPARE_URL=$(jq -r '.compare' <<<"$EVENT_JSON")
+          COMMIT_COUNT=$(jq '.commits | length' <<<"$EVENT_JSON")
+
+          if [ "$COMMIT_COUNT" = "0" ]; then
+            echo "push with 0 commits (paired with create/delete event); skipping."
+            exit 0
+          fi
+
+          if [ "$COMMIT_COUNT" = "1" ]; then
+            LABEL="1 new commit"
+          else
+            LABEL="${COMMIT_COUNT} new commits"
+          fi
+
+          MAX_LINES=20
+          BODY=$(jq -r --arg repo "$REPO" --argjson max "$MAX_LINES" '
+            (.commits | length) as $n
+            | (.commits[0:$max] | map(
+                "`<https://github.com/\($repo)/commit/\(.id)|\(.id[0:10])>` - "
+                + (.message | split("\n")[0])
+              )) as $lines
+            | if $n > $max
+                then ($lines | join("\n")) + "\n…and \($n - $max) more"
+                else ($lines | join("\n"))
+              end
+          ' <<<"$EVENT_JSON")
+
+          # Slack section text limit is 3000 chars; header + newline can take ~300, so cap body at 2600
+          MAX_LEN=2600
+          if [ "${#BODY}" -gt "$MAX_LEN" ]; then
+            BODY="${BODY:0:$MAX_LEN}…"
+          fi
+
+          CTX=$(context_json)
+          FALLBACK="${REPO_NAME}: ${LABEL} pushed to ${BRANCH} by ${ACTOR}"
+          PAYLOAD=$(jq -n \
+            --arg fallback "$FALLBACK" \
+            --arg label "$LABEL" \
+            --arg compare_url "$COMPARE_URL" \
+            --arg branch "$BRANCH" \
+            --arg branch_url "$BRANCH_URL" \
+            --arg actor "$ACTOR" \
+            --arg actor_url "$ACTOR_URL" \
+            --arg body "$BODY" \
+            --argjson ctx "$CTX" \
+            '{
+              text: $fallback,
+              attachments: [{
+                color: "#24292f",
+                blocks: [
+                  {
+                    type: "section",
+                    text: { type: "mrkdwn", text: "<\($compare_url)|\($label)> pushed to `<\($branch_url)|\($branch)>` by <\($actor_url)|\($actor)>\n\($body)" }
+                  },
+                  $ctx
+                ]
+              }]
+            }')
+          send "$PAYLOAD"
