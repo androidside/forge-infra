@@ -80,7 +80,15 @@ For `filter-events`, useful patterns:
 
 ### Step 4: Query the database
 
-Use python3 with pymysql to query the production database. First retrieve credentials from Secrets Manager:
+Use python3 with pymysql to query the production database. First retrieve the password.
+
+**Prefer `forge-nestjs/.env`** when available, it points at the prod RDS in dev workflows and avoids the AWS Secrets Manager round-trip (which often fails or is slow):
+
+```bash
+DB_PASSWORD=$(grep '^DATABASE_PASSWORD=' /home/sauron/git_wsl/forge-nestjs/.env | sed -E "s/^DATABASE_PASSWORD=//; s/^['\"]//; s/['\"]$//")
+```
+
+Fall back to Secrets Manager only if the `.env` value is missing:
 
 ```bash
 DB_PASSWORD=$(aws secretsmanager get-secret-value --secret-id forge/db-credentials --region us-east-1 --query 'SecretString' --output text | python3 -c "import sys,json; print(json.load(sys.stdin)['password'])")
