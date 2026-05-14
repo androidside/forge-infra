@@ -173,7 +173,10 @@ module "worker" {
   container_image    = local.api_image
   container_port     = 0
   cpu                = 256
-  memory             = 512
+  # Worker holds entire clip video buffers in RAM during social-media publish
+  # (Facebook multipart, LinkedIn videos, TikTok upload). 512 MB hit OOMKilled
+  # on real publishes; 2 GB gives headroom for concurrent jobs.
+  memory             = 2048
   desired_count      = 1
   log_group_name     = local.shared.ecs_log_group_name
 
