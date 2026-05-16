@@ -1,0 +1,7 @@
+{
+  "disabledMcpjsonServers": [
+    "claude.ai Gmail",
+    "claude.ai Ramp",
+    "claude.ai ClickUp"
+  ]
+}
