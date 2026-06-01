@@ -225,7 +225,7 @@ module "celery" {
     { name = "DIARIZATION_METHOD", value = "gemini" },
     { name = "GEMINI_MODEL", value = "gemini-3-flash-preview" },
     { name = "ANALYSIS_PROVIDER", value = "openai" },
-    { name = "OPENAI_MODEL", value = "gpt-5.4-nano" },
+    { name = "OPENAI_MODEL", value = "gpt-5.5" },
     { name = "GEMINI_ANALYSIS_MODEL", value = "gemini-3-flash-preview" },
     { name = "WHISPER_MODEL", value = "base" },
     { name = "WHISPER_DEVICE", value = "cpu" },
