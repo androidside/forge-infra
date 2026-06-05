@@ -176,9 +176,9 @@ module "worker" {
   # Worker holds entire clip video buffers in RAM during social-media publish
   # (Facebook multipart, LinkedIn videos, TikTok upload). 512 MB hit OOMKilled
   # on real publishes; 2 GB gives headroom for concurrent jobs.
-  memory             = 2048
-  desired_count      = 1
-  log_group_name     = local.shared.ecs_log_group_name
+  memory         = 2048
+  desired_count  = 1
+  log_group_name = local.shared.ecs_log_group_name
 
   enable_load_balancer = false
 
@@ -195,20 +195,20 @@ module "worker" {
 module "celery" {
   source = "../../../modules/ecs-service"
 
-  project            = var.project
-  environment        = var.environment
-  service_name       = "celery"
-  cluster_id         = local.shared.ecs_cluster_id
-  execution_role_arn = local.shared.ecs_execution_role_arn
-  task_role_arn      = local.shared.ecs_task_role_arn
-  vpc_id             = local.shared.vpc_id
-  private_subnet_ids = local.shared.private_subnet_ids
-  container_image    = local.worker_image
-  container_port     = 0
-  cpu                = 8192
-  memory             = 32768
-  desired_count      = 1
-  log_group_name     = local.shared.ecs_log_group_name
+  project               = var.project
+  environment           = var.environment
+  service_name          = "celery"
+  cluster_id            = local.shared.ecs_cluster_id
+  execution_role_arn    = local.shared.ecs_execution_role_arn
+  task_role_arn         = local.shared.ecs_task_role_arn
+  vpc_id                = local.shared.vpc_id
+  private_subnet_ids    = local.shared.private_subnet_ids
+  container_image       = local.worker_image
+  container_port        = 0
+  cpu                   = 8192
+  memory                = 32768
+  desired_count         = 1
+  log_group_name        = local.shared.ecs_log_group_name
   ephemeral_storage_gib = 40
 
   enable_load_balancer = false
@@ -226,6 +226,9 @@ module "celery" {
     { name = "GEMINI_MODEL", value = "gemini-3-flash-preview" },
     { name = "ANALYSIS_PROVIDER", value = "openai" },
     { name = "OPENAI_MODEL", value = "gpt-5.5" },
+    # gpt-5.5 is a reasoning model; on long (~75min) transcripts the analyze
+    # call needs well over the 60s code default. See pipeline_run 019e9604.
+    { name = "OPENAI_REQUEST_TIMEOUT", value = "300" },
     { name = "GEMINI_ANALYSIS_MODEL", value = "gemini-3-flash-preview" },
     { name = "WHISPER_MODEL", value = "base" },
     { name = "WHISPER_DEVICE", value = "cpu" },
