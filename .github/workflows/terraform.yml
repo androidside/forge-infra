@@ -268,12 +268,11 @@ jobs:
 
       - name: Slack - Terraform Success
         if: needs.shared.result != 'failure' && needs.services.result != 'failure' && needs.shared.result != 'cancelled' && needs.services.result != 'cancelled'
-        uses: 8398a7/action-slack@v3
-        with:
-          status: success
-          fields: repo,message,commit,author,workflow
-          channel: "#forge-deploys"
-          text: |
+        continue-on-error: true
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_FORGE_DEPLOYS_WEBHOOK_URL }}
+          SLACK_COLOR: "#2eb886"
+          SLACK_TEXT: |
             :white_check_mark: *Terraform Succeeded*
 
             *Commits:*
@@ -282,17 +281,23 @@ jobs:
 
             *Shared:* ${{ needs.shared.result == 'success' && ':white_check_mark: Applied' || ':white_circle: No changes' }}
             *Services:* ${{ needs.services.result == 'success' && ':white_check_mark: Applied' || ':white_circle: No changes' }}
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_FORGE_DEPLOYS_WEBHOOK_URL }}
+        run: |
+          set -euo pipefail
+          payload=$(jq -n \
+            --arg text "${SLACK_TEXT:0:6000}" \
+            --arg color "$SLACK_COLOR" \
+            --arg ctx "<${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}|${GITHUB_REPOSITORY}> • <${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}|${GITHUB_WORKFLOW} #${GITHUB_RUN_NUMBER}>" \
+            '{text: $text, attachments: [{color: $color, blocks: [{type: "context", elements: [{type: "mrkdwn", text: $ctx}]}]}]}')
+          curl --fail-with-body -sS --connect-timeout 5 --max-time 15 --retry 2 --retry-all-errors \
+            -H 'Content-type: application/json' -d "$payload" "$SLACK_WEBHOOK_URL"
 
       - name: Slack - Terraform Cancelled
         if: (needs.shared.result == 'cancelled' || needs.services.result == 'cancelled') && needs.shared.result != 'failure' && needs.services.result != 'failure'
-        uses: 8398a7/action-slack@v3
-        with:
-          status: cancelled
-          fields: repo,message,commit,author,workflow
-          channel: "#forge-deploys"
-          text: |
+        continue-on-error: true
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_FORGE_DEPLOYS_WEBHOOK_URL }}
+          SLACK_COLOR: "#daa038"
+          SLACK_TEXT: |
             :warning: *Terraform Cancelled*
 
             Run was cancelled before completing.
@@ -303,17 +308,23 @@ jobs:
 
             *Shared:* ${{ needs.shared.result == 'success' && ':white_check_mark: Applied' || needs.shared.result == 'skipped' && ':white_circle: No changes' || needs.shared.result == 'cancelled' && ':warning: Cancelled' || ':x: Failed' }}
             *Services:* ${{ needs.services.result == 'success' && ':white_check_mark: Applied' || needs.services.result == 'skipped' && ':white_circle: No changes' || needs.services.result == 'cancelled' && ':warning: Cancelled' || ':x: Failed' }}
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_FORGE_DEPLOYS_WEBHOOK_URL }}
+        run: |
+          set -euo pipefail
+          payload=$(jq -n \
+            --arg text "${SLACK_TEXT:0:6000}" \
+            --arg color "$SLACK_COLOR" \
+            --arg ctx "<${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}|${GITHUB_REPOSITORY}> • <${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}|${GITHUB_WORKFLOW} #${GITHUB_RUN_NUMBER}>" \
+            '{text: $text, attachments: [{color: $color, blocks: [{type: "context", elements: [{type: "mrkdwn", text: $ctx}]}]}]}')
+          curl --fail-with-body -sS --connect-timeout 5 --max-time 15 --retry 2 --retry-all-errors \
+            -H 'Content-type: application/json' -d "$payload" "$SLACK_WEBHOOK_URL"
 
       - name: Slack - Terraform Failed
         if: needs.shared.result == 'failure' || needs.services.result == 'failure'
-        uses: 8398a7/action-slack@v3
-        with:
-          status: failure
-          fields: repo,message,commit,author,workflow
-          channel: "#forge-deploys"
-          text: |
+        continue-on-error: true
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_FORGE_DEPLOYS_WEBHOOK_URL }}
+          SLACK_COLOR: "#a30200"
+          SLACK_TEXT: |
             :rotating_light: *Terraform FAILED*
 
             *Commits:*
@@ -324,5 +335,12 @@ jobs:
             *Services:* ${{ needs.services.result == 'success' && ':white_check_mark: Applied' || needs.services.result == 'skipped' && ':white_circle: No changes' || needs.services.result == 'cancelled' && ':warning: Cancelled' || ':x: Failed' }}
 
             <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View logs>
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_FORGE_DEPLOYS_WEBHOOK_URL }}
+        run: |
+          set -euo pipefail
+          payload=$(jq -n \
+            --arg text "${SLACK_TEXT:0:6000}" \
+            --arg color "$SLACK_COLOR" \
+            --arg ctx "<${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}|${GITHUB_REPOSITORY}> • <${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}|${GITHUB_WORKFLOW} #${GITHUB_RUN_NUMBER}>" \
+            '{text: $text, attachments: [{color: $color, blocks: [{type: "context", elements: [{type: "mrkdwn", text: $ctx}]}]}]}')
+          curl --fail-with-body -sS --connect-timeout 5 --max-time 15 --retry 2 --retry-all-errors \
+            -H 'Content-type: application/json' -d "$payload" "$SLACK_WEBHOOK_URL"
