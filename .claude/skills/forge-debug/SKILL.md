@@ -187,6 +187,13 @@ Note: ECS exec requires the Session Manager plugin. If it's not installed, you'l
 
 ## Common Failure Patterns
 
+**Download fails with "Requested format is not available":**
+- The format selector is almost never the problem; this means yt-dlp saw zero usable formats
+- Look for `n challenge solving failed` and `Only images are available` in the celery logs right before the error: yt-dlp could not solve YouTube's JS anti-bot challenge, so every real format was dropped
+- Root cause is usually the container's JS runtime falling below yt-dlp's minimum (yt-dlp 2026.06 requires Node >= 22; happened 2026-06-11 when an image rebuild picked up new yt-dlp while Debian's apt nodejs stayed at 20.x)
+- To confirm, run inside the image: `yt-dlp -v --js-runtimes node <url>` and check the `[debug] JS runtimes:` line for `(unsupported)`
+- The Dockerfile copies node from `node:22-slim` and has a build-time guard that fails when yt-dlp rejects the runtime; if this recurs, check whether yt-dlp raised its floor again
+
 **Pipeline stuck at a step:**
 - Check `current_step` in `pipeline_run` table
 - Look at celery logs around the time the run was created
