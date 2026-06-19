@@ -80,6 +80,8 @@ For `filter-events`, useful patterns:
 
 ### Step 4: Query the database
 
+> **Driver requirement:** the query snippets below run under the `python3` on your PATH and need `pymysql` installed there, plus `cryptography` for RDS `caching_sha2_password` auth. If you hit `ModuleNotFoundError: No module named 'pymysql'`, install into that interpreter with `python3 -m pip install --break-system-packages pymysql cryptography`. Note: if `python3` is Homebrew's (common on these dev machines), `sudo apt install python3-pymysql` targets a different interpreter and won't be visible; the install must hit the `python3` actually on PATH.
+
 Use python3 with pymysql to query the production database. First retrieve the password.
 
 **Prefer `forge-nestjs/.env`** when available, it points at the prod RDS in dev workflows and avoids the AWS Secrets Manager round-trip (which often fails or is slow):
