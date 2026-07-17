@@ -225,8 +225,11 @@ module "celery" {
     { name = "DIARIZATION_METHOD", value = "gemini" },
     { name = "GEMINI_MODEL", value = "gemini-3-flash-preview" },
     { name = "ANALYSIS_PROVIDER", value = "openai" },
-    { name = "OPENAI_MODEL", value = "gpt-5.5" },
-    # gpt-5.5 is a reasoning model; on long (~75min) transcripts the analyze
+    { name = "OPENAI_MODEL", value = "gpt-5.6-sol" },
+    # GPT-5.6 defaults to medium reasoning when omitted. Analyze, per-clip
+    # refinement, and triage are quality-first editorial decisions.
+    { name = "OPENAI_REASONING_EFFORT", value = "high" },
+    # GPT-5.6 Sol is a reasoning model; on long (~75min) transcripts the analyze
     # call needs well over the 60s code default. See pipeline_run 019e9604.
     { name = "OPENAI_REQUEST_TIMEOUT", value = "300" },
     { name = "GEMINI_ANALYSIS_MODEL", value = "gemini-3-flash-preview" },
