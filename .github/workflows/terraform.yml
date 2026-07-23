@@ -39,7 +39,7 @@ env:
   TF_VERSION: "1.7.0"
   TF_VAR_domain_name: "viralclips.ai"
   TF_VAR_rds_publicly_accessible: "true"
-  TF_VAR_rds_allowed_cidr_blocks: '["89.39.212.206/32", "107.142.32.250/32"]'
+  TF_VAR_rds_allowed_cidr_blocks: '["89.39.212.206/32", "73.3.19.186/32"]'
 
 permissions:
   id-token: write
@@ -68,6 +68,7 @@ jobs:
             shared:
               - 'modules/**'
               - 'environments/dev/shared/**'
+              - '.github/workflows/terraform.yml'
             services:
               - 'modules/ecs-service/**'
               - 'environments/dev/services/**'
