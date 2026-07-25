@@ -1,0 +1,137 @@
+name: Slack Push Notification
+
+on:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack push notification
+        continue-on-error: true
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_FORGE_DEPLOYS_WEBHOOK_URL }}
+          EVENT_JSON: ${{ toJson(github.event) }}
+          REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+          SERVER_URL: ${{ github.server_url }}
+        run: |
+          set -euo pipefail
+
+          # Strip whitespace that can be introduced when a webhook is pasted.
+          SLACK_WEBHOOK_URL="${SLACK_WEBHOOK_URL//[$'\r\n\t ']/}"
+          case "$SLACK_WEBHOOK_URL" in
+            "") echo "SLACK_FORGE_DEPLOYS_WEBHOOK_URL is empty; skipping."; exit 0 ;;
+            https://hooks.slack.com/*) ;;
+            *) echo "SLACK_FORGE_DEPLOYS_WEBHOOK_URL is not a Slack webhook; skipping."; exit 0 ;;
+          esac
+
+          REF=$(jq -r '.ref' <<<"$EVENT_JSON")
+          case "$REF" in
+            refs/heads/*) ;;
+            *) echo "Non-branch ref $REF; skipping."; exit 0 ;;
+          esac
+
+          COMMIT_COUNT=$(jq '.commits | length' <<<"$EVENT_JSON")
+          if [ "$COMMIT_COUNT" = "0" ]; then
+            echo "Push has no commits; skipping."
+            exit 0
+          fi
+
+          REPO_URL="${SERVER_URL}/${REPO}"
+          REPO_NAME="${REPO##*/}"
+          ACTOR_URL="${SERVER_URL}/${ACTOR}"
+          BRANCH=$(jq -r '.ref | sub("^refs/heads/"; "")' <<<"$EVENT_JSON")
+          BRANCH_URL="${REPO_URL}/tree/${BRANCH}"
+          COMPARE_URL=$(jq -r '.compare' <<<"$EVENT_JSON")
+          DEFAULT_BRANCH=$(jq -r '.repository.default_branch // ""' <<<"$EVENT_JSON")
+
+          if [ "$COMMIT_COUNT" = "1" ]; then
+            LABEL="1 new commit"
+          else
+            LABEL="${COMMIT_COUNT} new commits"
+          fi
+
+          # Commit subjects are user-controlled Slack mrkdwn. Escape them so
+          # strings such as <!channel> cannot turn into active mentions.
+          MAX_LINES=20
+          BODY=$(jq -r --arg repo "$REPO" --arg server "$SERVER_URL" --argjson max "$MAX_LINES" '
+            (.commits | length) as $count
+            | (.commits[0:$max] | map(
+                "`<\($server)/\($repo)/commit/\(.id)|\(.id[0:10])>` - "
+                + (.message | split("\n")[0]
+                   | gsub("&"; "&amp;") | gsub("<"; "&lt;") | gsub(">"; "&gt;"))
+              )) as $lines
+            | if $count > $max
+                then ($lines | join("\n")) + "\n…and \($count - $max) more"
+                else ($lines | join("\n"))
+              end
+          ' <<<"$EVENT_JSON")
+
+          # Slack section text is limited to 3000 characters.
+          MAX_LEN=2600
+          if [ "${#BODY}" -gt "$MAX_LEN" ]; then
+            BODY="${BODY:0:$MAX_LEN}…"
+          fi
+
+          if [ "$BRANCH" = "$DEFAULT_BRANCH" ]; then
+            COLOR="#439fe0"
+          else
+            COLOR="#24292f"
+          fi
+
+          CONTEXT=$(jq -n \
+            --arg repo "$REPO" \
+            --arg repo_url "$REPO_URL" \
+            --arg actor "$ACTOR" \
+            --arg actor_url "$ACTOR_URL" \
+            '{
+              type: "context",
+              elements: [
+                {type: "image", image_url: "https://github.githubassets.com/favicons/favicon.png", alt_text: "GitHub"},
+                {type: "mrkdwn", text: "<\($repo_url)|\($repo)>"},
+                {type: "image", image_url: "https://github.com/\($actor).png?size=32", alt_text: $actor},
+                {type: "mrkdwn", text: "<\($actor_url)|\($actor)>"}
+              ]
+            }')
+
+          FALLBACK="${REPO_NAME}: ${LABEL} pushed to ${BRANCH} by ${ACTOR}"
+          PAYLOAD=$(jq -n \
+            --arg fallback "$FALLBACK" \
+            --arg label "$LABEL" \
+            --arg compare_url "$COMPARE_URL" \
+            --arg branch "$BRANCH" \
+            --arg branch_url "$BRANCH_URL" \
+            --arg actor "$ACTOR" \
+            --arg actor_url "$ACTOR_URL" \
+            --arg body "$BODY" \
+            --arg color "$COLOR" \
+            --argjson context "$CONTEXT" \
+            '{
+              text: $fallback,
+              attachments: [{
+                color: $color,
+                blocks: [
+                  {
+                    type: "section",
+                    text: {
+                      type: "mrkdwn",
+                      text: "<\($compare_url)|\($label)> pushed to `<\($branch_url)|\($branch)>` by <\($actor_url)|\($actor)>\n\($body)"
+                    }
+                  },
+                  $context
+                ]
+              }]
+            }')
+
+          curl --fail-with-body -sS \
+            --connect-timeout 5 \
+            --max-time 15 \
+            --retry 2 \
+            --retry-all-errors \
+            -H 'Content-type: application/json' \
+            -d "$PAYLOAD" \
+            "$SLACK_WEBHOOK_URL"

@@ -135,6 +135,19 @@ aws ecs update-service \
 ./scripts/deploy.sh dev shared apply
 ```
 
+## GitHub Actions Notifications
+
+`.github/workflows/slack-notify.yml` posts an immediate Slack card for every
+commit push to every branch, including feature branches and documentation-only
+pushes. The card links the branch, compare view, commits, repository, and actor.
+It uses the existing `SLACK_FORGE_DEPLOYS_WEBHOOK_URL` GitHub Actions secret and
+does not apply Terraform.
+
+The separate `.github/workflows/terraform.yml` remains restricted to its
+existing plan/apply rules and sends the eventual infrastructure result. A push
+to `main` can therefore produce two intentionally different notifications: an
+immediate push card and a later Terraform success, warning, or failure card.
+
 ## Teardown
 
 Destroy in reverse order (services first, then shared):
